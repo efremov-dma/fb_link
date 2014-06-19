@@ -1,0 +1,209 @@
+<?php
+/**
+ * Implements hook_field_info().
+ * @return array
+ */
+function fb_link_field_info() {
+  return array(
+    'fb_link' => array(
+      'label' => t('Facebook Link'),
+      'description' => t('Link to the facebook profile.'),
+      'default_widget' => 'fb_link',
+      'default_formatter' => 'fb_link',
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_widget_info().
+ * @return array
+ */
+function fb_link_field_widget_info() {
+  return array(
+    'fb_link' => array(
+      'label' => t('Facebook Link'),
+      'field types' => array('fb_link'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_widget_form().
+ * @param $form
+ * @param $form_state
+ * @param $field
+ * @param $instance
+ * @param $langcode
+ * @param $items
+ * @param $delta
+ * @param $element
+ * @return mixed
+ */
+function fb_link_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+  global $user;
+
+  if (in_array('administrator', $user->roles) || in_array('moderator', $user->roles)) {
+    switch ($instance['widget']['type']) {
+      case 'fb_link':
+        $element['fb_link'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Facebook profile link'),
+          '#size' => 255,
+          '#default_value' => isset($items[0]['fb_link']) ? $items[0]['fb_link'] : $field['default_value'][0]['fb_link'],
+          '#description' => t('Reference to the facebook profile.'),
+        );
+        break;
+    } /* close switch */
+  } /* close if */
+  return $element;
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ * @return array
+ */
+function fb_link_field_formatter_info() {
+  return array(
+    'fb_link' => array(
+      'label' => t('Facebook Link Formatter'),
+      'field types' => array('fb_link'),
+      'settings' => array(
+        'button_size' => 'small',
+        'hint_message' => t('This is a hint message'),
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_formatter_settings_form().
+ * @param $field
+ * @param $instance
+ * @param $view_mode
+ * @param $form
+ * @param $form_state
+ * @return mixed
+ */
+function fb_link_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  /* Switch fot different formatters. */
+  switch ($display['type']) {
+    case 'fb_link':
+      $form['button_size'] = array(
+        '#type' => 'select',
+        '#title' => t('Button size'),
+        '#options' => array(
+          'small' => t('Small'),
+          'medium' => t('Medium'),
+          'large' => t('Large'),
+        ),
+        '#default_value' => $settings['button_size'],
+        '#description' =>  t('Size of the button.'),
+      );
+
+      $form['hint_message'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Hint message'),
+        '#size' => 255,
+        '#default_value' => $settings['hint_message'],
+        '#description' => t('Hint message that will appear on hover.'),
+      );
+      break;
+  }
+  return $form;
+}
+
+/**
+ * Implements hook_field_formatter_settings_summary().
+ * @param $field
+ * @param $instance
+ * @param $view_mode
+ * @return string
+ */
+function fb_link_field_formatter_settings_summary($field, $instance, $view_mode) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+  $summary = '';
+
+  switch ($display['type']) {
+    case 'fb_link':
+      $summary = '<p>' . t('Button size:') . ' "' . $settings['button_size'] . '"</p><p>' . t('Hint message:') . ' "' . $settings['hint_message'] . '"</p>';
+      break;
+  }
+  return $summary;
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ *
+ * @param $entity_type
+ * @param $entity
+ * @param $field
+ * @param $instance
+ * @param $langcode
+ * @param $items
+ * @param $display
+ * @return array
+ */
+function fb_link_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $output = array();
+  $settings = $display['settings'];
+
+  switch ($display['type']) {
+    case 'fb_link' :
+        if (isset($items[0]['fb_link'])) {
+          $profile_link = $items[0]['fb_link'];
+          $profile_link_array = explode('/', $profile_link);
+          $profile_id = end($profile_link_array);
+
+          $path = drupal_get_path('module', 'fb_link');
+
+          $button = theme('image', array('path' => $path . '/images/fb_' . $settings['button_size'] . '.png' ));
+
+          dsm($settings);
+
+          $container = array(
+            '#type' => 'container',
+            '#attributes' => array(
+              'class' => array('fb-link-wrap'),
+            ),
+          );
+
+          $container['fb_profile_image'] = array(
+            '#theme' => 'image_formatter',
+            '#item' => array(
+              'uri' => 'https://graph.facebook.com/' . $profile_id . '/picture?type=large',
+              'alt' => '',
+              'title' => '',
+            ),
+          );
+
+          $container['fb_profile_link'] = array(
+            '#theme' => 'link',
+            '#text' => $button,
+            '#path' => $profile_link,
+            '#options' => array(
+              'attributes' => array(
+                'title' => $settings['hint_message'],
+              ),
+              'html' => TRUE, /* disables checkplain */
+            ),
+          );
+          $output[] = $container;
+        }
+      break;
+  }
+  return $output;
+}
+
+/**
+ * Implements hook_field_is_empty().
+ * @param $item
+ * @param $field
+ * @return bool
+ */
+function fb_link_field_is_empty($item, $field) {
+  return empty($item['fb_link']);
+}

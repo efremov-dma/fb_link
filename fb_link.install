@@ -1,0 +1,18 @@
+<?php
+
+/**
+ * Implements hook_field_schema().
+ * @param $field
+ * @return array
+ */
+function fb_link_field_schema($field) {
+  return array(
+    'columns' => array(
+      'fb_link' => array(
+        'description' => t('Reference to the facebook profile.'),
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+    ),
+  );
+}
