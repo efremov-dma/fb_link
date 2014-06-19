@@ -162,8 +162,6 @@ function fb_link_field_formatter_view($entity_type, $entity, $field, $instance, 
 
           $button = theme('image', array('path' => $path . '/images/fb_' . $settings['button_size'] . '.png' ));
 
-          dsm($settings);
-
           $container = array(
             '#type' => 'container',
             '#attributes' => array(
